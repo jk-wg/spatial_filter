@@ -88,7 +88,7 @@ def removeFilterFromLayer(layer: QgsVectorLayer):
 
 def crsAuthority(crs: QgsCoordinateReferenceSystem) -> str:
     authid = crs.authid() or ''
-    return authid.split(':')[0].upper()
+    return authid.split(':', maxsplit=1)[0].upper()
 
 
 def isPostgisLayer(layer: QgsMapLayer) -> bool:
@@ -106,7 +106,7 @@ def addFilterToLayer(layer: QgsVectorLayer, filterDef: 'FilterDefinition'):
         if warningId != filterCrsAuthId:
             txt = tr(
                 "Skipping spatial filtering for PostGIS layer {layerName!r} because the filter CRS {crsAuthId!r} "
-                "is not authoritative. Use a CRS with EPSG or ESRI authority."
+                "uses an unsupported CRS authority. Use a CRS with EPSG or ESRI authority."
             ).format(layerName=layer.name(), crsAuthId=filterCrsAuthId)
             iface.messageBar().pushWarning(LOCALIZED_PLUGIN_NAME, txt)
             layer.setCustomProperty(UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY, filterCrsAuthId)
