@@ -5,12 +5,16 @@ from typing import Any, List, Iterable
 
 from osgeo import ogr
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import Qgis, QgsExpressionContextUtils, QgsSettings, QgsMapLayer, QgsMapLayerType, QgsVectorLayer,\
-    QgsWkbTypes
+from qgis.core import Qgis, QgsExpressionContextUtils, QgsSettings, QgsMapLayer, QgsMapLayerType, QgsVectorLayer, \
+    QgsWkbTypes, QgsCoordinateReferenceSystem
 from qgis.utils import iface
 
 from .settings import SUPPORTED_STORAGE_TYPES, GROUP, FILTER_COMMENT_START, FILTER_COMMENT_STOP, \
     LAYER_EXCEPTION_VARIABLE, LOCALIZED_PLUGIN_NAME
+
+POSTGIS_STORAGE_TYPE = 'POSTGRESQL DATABASE WITH POSTGIS EXTENSION'
+SUPPORTED_POSTGIS_CRS_AUTHORITIES = {'EPSG', 'ESRI'}
+UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY = 'SpatialFilter/UnsupportedPostgisFilterCrsWarning'
 
 
 def tr(message):
@@ -82,7 +86,34 @@ def removeFilterFromLayer(layer: QgsVectorLayer):
     layer.setSubsetString(newFilter)
 
 
+def crsAuthority(crs: QgsCoordinateReferenceSystem) -> str:
+    authid = crs.authid() or ''
+    return authid.split(':')[0].upper()
+
+
+def isPostgisLayer(layer: QgsMapLayer) -> bool:
+    return layer.storageType().upper() == POSTGIS_STORAGE_TYPE
+
+
+def hasSupportedPostgisCrs(crs: QgsCoordinateReferenceSystem) -> bool:
+    return crsAuthority(crs) in SUPPORTED_POSTGIS_CRS_AUTHORITIES
+
+
 def addFilterToLayer(layer: QgsVectorLayer, filterDef: 'FilterDefinition'):
+    if isPostgisLayer(layer) and not hasSupportedPostgisCrs(filterDef.crs):
+        filterCrsAuthId = filterDef.crs.authid() or tr('Unknown CRS')
+        warningId = layer.customProperty(UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY)
+        if warningId != filterCrsAuthId:
+            txt = tr(
+                "Skipping spatial filtering for PostGIS layer {layerName!r} because the filter CRS {crsAuthId!r} "
+                "is not authoritative. Use a CRS with EPSG or ESRI authority."
+            ).format(layerName=layer.name(), crsAuthId=filterCrsAuthId)
+            iface.messageBar().pushWarning(LOCALIZED_PLUGIN_NAME, txt)
+            layer.setCustomProperty(UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY, filterCrsAuthId)
+        removeFilterFromLayer(layer)
+        return
+    layer.removeCustomProperty(UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY)
+
     currentFilter = layer.subsetString()
     if FILTER_COMMENT_START in currentFilter:
         removeFilterFromLayer(layer)
