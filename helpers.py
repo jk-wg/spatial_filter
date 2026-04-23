@@ -65,9 +65,10 @@ def getSupportedLayers(layers: Iterable[QgsMapLayer]):
 def isLayerSupported(layer: QgsMapLayer):
     if layer.type() != QgsMapLayerType.VectorLayer:
         return False
-    if layer.storageType().upper() not in SUPPORTED_STORAGE_TYPES:
-        return False
     if not layer.isSpatial():
+        return False
+    storageType = (layer.storageType() or '').upper()
+    if storageType not in SUPPORTED_STORAGE_TYPES:
         return False
     return True
 
