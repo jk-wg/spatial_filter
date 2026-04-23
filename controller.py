@@ -79,8 +79,11 @@ class FilterController(QObject):
         self.updateLayerFilters()
 
     def refreshFilter(self):
+        mapCanvas = iface.mapCanvas()
+        mapCanvas.stopRendering()
         self.filterChanged.emit(self.currentFilter)
         self.updateProjectLayers()
+        mapCanvas.refresh()
 
     def setFilterFromSelection(self):
         layer = iface.activeLayer()
