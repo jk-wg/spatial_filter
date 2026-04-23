@@ -265,6 +265,7 @@ class FilterToolbar(QToolBar):
     LAYOUT_SPACING = 5
     FILTER_LABEL_WIDTH = 150
     BUTTON_MIN_WIDTH = 50
+    DEFAULT_FILTER_ENABLED_STATE = True
 
     def __init__(self, controller: FilterController, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
@@ -292,21 +293,22 @@ class FilterToolbar(QToolBar):
         self.labelFilterName.setMinimumWidth(self.FILTER_LABEL_WIDTH)
         self.addWidget(self.labelFilterName)
 
+        icons_dir = os.path.join(os.path.dirname(__file__), 'icons')
         self.toggleFilterAction = QAction(self)
         toggleFilterIcon = QIcon()
         toggleFilterIcon.addPixmap(
-            QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'filter_on.png')).pixmap(self.iconSize()),
+            QIcon(os.path.join(icons_dir, 'filter_on.png')).pixmap(self.iconSize()),
             QIcon.Mode.Normal,
             QIcon.State.On
         )
         toggleFilterIcon.addPixmap(
-            QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'filter_off.png')).pixmap(self.iconSize()),
+            QIcon(os.path.join(icons_dir, 'filter_off.png')).pixmap(self.iconSize()),
             QIcon.Mode.Normal,
             QIcon.State.Off
         )
         self.toggleFilterAction.setIcon(toggleFilterIcon)
         self.toggleFilterAction.setCheckable(True)
-        self.toggleFilterAction.setChecked(True)
+        self.toggleFilterAction.setChecked(self.DEFAULT_FILTER_ENABLED_STATE)
         self.toggleFilterAction.setToolTip(self.tr('Disable current filter'))
         self.addAction(self.toggleFilterAction)
 
@@ -408,9 +410,9 @@ class FilterToolbar(QToolBar):
             self.removeFilterAction.setEnabled(False)
             self.toggleFilterAction.setEnabled(False)
             self.toggleFilterAction.blockSignals(True)
-            self.toggleFilterAction.setChecked(True)
+            self.toggleFilterAction.setChecked(self.DEFAULT_FILTER_ENABLED_STATE)
             self.toggleFilterAction.blockSignals(False)
-            self.updateToggleFilterTooltip(True)
+            self.updateToggleFilterTooltip(self.DEFAULT_FILTER_ENABLED_STATE)
             self.labelFilterName.setEnabled(False)
             self.toggleVisibilityAction.setEnabled(False)
             self.predicateButton.setEnabled(False)

@@ -46,17 +46,20 @@ class FilterController(QObject):
 
     def onLayersAdded(self, layers: Iterable[QgsMapLayer]):
         warnAboutCurveGeoms(layers)
-        if self.hasValidFilter() and self.filterEnabled:
-            # Apply the filter to added layers or loaded project
-            for layer in getSupportedLayers(layers):
-                addFilterToLayer(layer, self.currentFilter)
+        if self.hasValidFilter():
+            if self.filterEnabled:
+                # Apply the filter to added layers or loaded project
+                for layer in getSupportedLayers(layers):
+                    addFilterToLayer(layer, self.currentFilter)
+            else:
+                # Keep current filter definition, but do not apply it while disabled
+                pass
         else:
             # Look for saved filters to use with the plugin (possible when project was loaded)
-            if not self.hasValidFilter():
-                for layer in getSupportedLayers(layers):
-                    if FILTER_COMMENT_START in layer.subsetString():
-                        self.setFilterFromLayer(layer)
-                        return
+            for layer in getSupportedLayers(layers):
+                if FILTER_COMMENT_START in layer.subsetString():
+                    self.setFilterFromLayer(layer)
+                    return
 
     def onProjectCleared(self):
         """Removes the filter if one is active.
