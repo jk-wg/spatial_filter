@@ -47,6 +47,9 @@ class FilterController(QObject):
         if self.hasValidFilter():
             # Apply the filter to added layers or loaded project
             for layer in getSupportedLayers(layers):
+                if hasLayerException(layer):
+                    removeFilterFromLayer(layer)
+                    continue
                 addFilterToLayer(layer, self.currentFilter)
         else:
             # Look for saved filters to use with the plugin (possible when project was loaded)
