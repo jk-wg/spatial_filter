@@ -21,6 +21,7 @@ class FilterController(QObject):
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent=parent)
         self.currentFilter = None
+        self.filterEnabled = True
         self.rubberBands = []
         self.connectSignals()
 
@@ -40,20 +41,22 @@ class FilterController(QObject):
 
     def removeFilter(self):
         self.currentFilter = None
+        self.filterEnabled = True
         self.refreshFilter()
 
     def onLayersAdded(self, layers: Iterable[QgsMapLayer]):
         warnAboutCurveGeoms(layers)
-        if self.hasValidFilter():
+        if self.hasValidFilter() and self.filterEnabled:
             # Apply the filter to added layers or loaded project
             for layer in getSupportedLayers(layers):
                 addFilterToLayer(layer, self.currentFilter)
         else:
             # Look for saved filters to use with the plugin (possible when project was loaded)
-            for layer in getSupportedLayers(layers):
-                if FILTER_COMMENT_START in layer.subsetString():
-                    self.setFilterFromLayer(layer)
-                    return
+            if not self.hasValidFilter():
+                for layer in getSupportedLayers(layers):
+                    if FILTER_COMMENT_START in layer.subsetString():
+                        self.setFilterFromLayer(layer)
+                        return
 
     def onProjectCleared(self):
         """Removes the filter if one is active.
@@ -65,11 +68,12 @@ class FilterController(QObject):
     def setFilterFromLayer(self, layer):
         filterDefinition = FilterDefinition.fromFilterString(layer.subsetString())
         self.currentFilter = filterDefinition
+        self.filterEnabled = True
         self.refreshFilter()
 
     def updateLayerFilters(self):
         for layer in getSupportedLayers(QgsProject.instance().mapLayers().values()):
-            if self.hasValidFilter() and not hasLayerException(layer):
+            if self.hasValidFilter() and self.filterEnabled and not hasLayerException(layer):
                 addFilterToLayer(layer, self.currentFilter)
             else:
                 removeFilterFromLayer(layer)
@@ -109,8 +113,13 @@ class FilterController(QObject):
         self.currentFilter.bbox = bbox
         self.refreshFilter()
 
+    def setFilterEnabled(self, enabled: bool):
+        self.filterEnabled = enabled
+        self.refreshFilter()
+
     def initFilter(self):
         self.currentFilter = FilterDefinition.defaultFilter()
+        self.filterEnabled = True
 
     def hasValidFilter(self):
         return self.currentFilter and self.currentFilter.isValid
