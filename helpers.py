@@ -85,21 +85,21 @@ def removeFilterFromLayer(layer: QgsVectorLayer):
     layer.setSubsetString(newFilter)
 
 
-def crsAuthority(crs: QgsCoordinateReferenceSystem) -> str:
+def crs_authority(crs: QgsCoordinateReferenceSystem) -> str:
     authid = crs.authid() or ''
     return authid.split(':', maxsplit=1)[0].upper()
 
 
-def isPostgisLayer(layer: QgsMapLayer) -> bool:
+def is_postgis_layer(layer: QgsMapLayer) -> bool:
     return layer.storageType().upper() == POSTGIS_STORAGE_TYPE
 
 
-def hasSupportedPostgisCrs(crs: QgsCoordinateReferenceSystem) -> bool:
-    return crsAuthority(crs) in SUPPORTED_POSTGIS_CRS_AUTHORITIES
+def has_supported_postgis_crs(crs: QgsCoordinateReferenceSystem) -> bool:
+    return crs_authority(crs) in SUPPORTED_POSTGIS_CRS_AUTHORITIES
 
 
 def addFilterToLayer(layer: QgsVectorLayer, filterDef: 'FilterDefinition'):
-    if isPostgisLayer(layer) and not hasSupportedPostgisCrs(filterDef.crs):
+    if is_postgis_layer(layer) and not has_supported_postgis_crs(filterDef.crs):
         filterCrsAuthId = filterDef.crs.authid() or tr('Unknown CRS')
         warningId = layer.customProperty(UNSUPPORTED_POSTGIS_FILTER_CRS_WARNING_KEY)
         if warningId != filterCrsAuthId:
