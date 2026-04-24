@@ -22,6 +22,7 @@ class FilterController(QObject):
         super().__init__(parent=parent)
         self.currentFilter = None
         self.rubberBands = []
+        self.filterEnabled = True
         self.connectSignals()
 
     def connectSignals(self):
@@ -45,9 +46,10 @@ class FilterController(QObject):
     def onLayersAdded(self, layers: Iterable[QgsMapLayer]):
         warnAboutCurveGeoms(layers)
         if self.hasValidFilter():
-            # Apply the filter to added layers or loaded project
-            for layer in getSupportedLayers(layers):
-                addFilterToLayer(layer, self.currentFilter)
+            if self.filterEnabled:
+                # Apply the filter to added layers or loaded project
+                for layer in getSupportedLayers(layers):
+                    addFilterToLayer(layer, self.currentFilter)
         else:
             # Look for saved filters to use with the plugin (possible when project was loaded)
             for layer in getSupportedLayers(layers):
@@ -69,7 +71,7 @@ class FilterController(QObject):
 
     def updateLayerFilters(self):
         for layer in getSupportedLayers(QgsProject.instance().mapLayers().values()):
-            if self.hasValidFilter() and not hasLayerException(layer):
+            if self.hasValidFilter() and self.filterEnabled and not hasLayerException(layer):
                 addFilterToLayer(layer, self.currentFilter)
             else:
                 removeFilterFromLayer(layer)

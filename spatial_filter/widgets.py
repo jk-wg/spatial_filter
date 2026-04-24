@@ -286,6 +286,18 @@ class FilterToolbar(QToolBar):
         self.removeFilterAction.setToolTip(self.tr('Remove current filter'))
         self.addAction(self.removeFilterAction)
 
+        self.toggleFilterAction = QAction(self)
+        toggleFilterIcon = QIcon()
+        pixmapOn = QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'filter_on.png')).pixmap(self.iconSize())
+        pixmapOff = QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'filter_off.png')).pixmap(self.iconSize())
+        toggleFilterIcon.addPixmap(pixmapOn, QIcon.Mode.Normal, QIcon.State.On)
+        toggleFilterIcon.addPixmap(pixmapOff, QIcon.Mode.Normal, QIcon.State.Off)
+        self.toggleFilterAction.setIcon(toggleFilterIcon)
+        self.toggleFilterAction.setCheckable(True)
+        self.toggleFilterAction.setChecked(True)
+        self.toggleFilterAction.setToolTip(self.tr('Disable filter'))
+        self.addAction(self.toggleFilterAction)
+
         self.labelFilterName = QLabel(self)
         self.labelFilterName.setFrameShape(QFrame.Shape.Panel)
         self.labelFilterName.setFrameShadow(QFrame.Shadow.Sunken)
@@ -351,6 +363,7 @@ class FilterToolbar(QToolBar):
 
     def setupConnections(self):
         self.removeFilterAction.triggered.connect(self.onRemoveFilterClicked)
+        self.toggleFilterAction.toggled.connect(self.onToggleFilter)
         self.filterFromExtentAction.triggered.connect(self.startFilterFromExtentDialog)
         self.layerExceptionsAction.triggered.connect(self.startLayerExceptionsDialog)
         self.manageFiltersAction.triggered.connect(self.startManageFiltersDialog)
@@ -373,17 +386,21 @@ class FilterToolbar(QToolBar):
             self.removeFilterAction.setEnabled(True)
             self.labelFilterName.setEnabled(True)
             self.toggleVisibilityAction.setEnabled(True)
+            self.toggleFilterAction.setEnabled(True)
             self.predicateButton.setEnabled(True)
             self.layerExceptionsAction.setEnabled(True)
             self.zoomToFilterAction.setEnabled(True)
             if not self.showGeomStatus:
                 self.toggleVisibilityAction.trigger()
+            if not self.controller.filterEnabled:
+                self.toggleFilterAction.trigger()
         else:
             self.predicateButton.setCurrentPredicateAction(Predicate.INTERSECTS)
             self.predicateButton.setCurrentBboxAction(False)
             self.removeFilterAction.setEnabled(False)
             self.labelFilterName.setEnabled(False)
             self.toggleVisibilityAction.setEnabled(False)
+            self.toggleFilterAction.setEnabled(False)
             self.predicateButton.setEnabled(False)
             self.layerExceptionsAction.setEnabled(False)
             self.zoomToFilterAction.setEnabled(False)
@@ -429,6 +446,12 @@ class FilterToolbar(QToolBar):
             tooltip = self.tr('Show filter geometry')
             self.hideFilterGeom()
         self.toggleVisibilityAction.setToolTip(tooltip)
+
+    def onToggleFilter(self, checked: bool):
+        self.controller.filterEnabled = checked
+        tooltip = self.tr('Disable filter') if checked else self.tr('Enable filter')
+        self.controller.updateProjectLayers()
+        self.toggleFilterAction.setToolTip(tooltip)
 
     def showFilterGeom(self):
         """Get filterRubberBand geometry, transform it and show it on canvas"""
